@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Health"/>
+  <meta name="theme-color" content="#0a0a0a"/>
+  <title>Daily Health</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a; --bg4:#222;
+      --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.14);
+      --text:#f0f0f0; --text2:#888; --text3:#555;
+      --green:#4ade80; --green-bg:rgba(74,222,128,0.1);
+      --red:#f87171; --red-bg:rgba(248,113,113,0.1);
+      --amber:#fbbf24; --amber-bg:rgba(251,191,36,0.1);
+      --blue:#60a5fa; --blue-bg:rgba(96,165,250,0.1);
+      --purple:#a78bfa; --purple-bg:rgba(167,139,250,0.1);
+      --teal:#2dd4bf; --teal-bg:rgba(45,212,191,0.1);
+      --radius:16px; --radius-sm:10px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    html{background:var(--bg);}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0);overflow-x:hidden;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes popIn{0%{transform:scale(0.85);opacity:0}70%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+    @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes glassIn{0%{transform:scale(0.7);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+    @keyframes checkAnim{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+    @keyframes bellRing{0%,100%{transform:rotate(0)}20%{transform:rotate(15deg)}40%{transform:rotate(-15deg)}60%{transform:rotate(10deg)}80%{transform:rotate(-10deg)}}
+    .page{display:none;flex-direction:column;min-height:100dvh;}
+    .page.active{display:flex;animation:fadeUp 0.35s ease;}
+    .nav{position:fixed;bottom:0;left:0;right:0;bottom:env(safe-area-inset-bottom,0);background:rgba(10,10,10,0.93);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:0.5px solid var(--border);display:flex;z-index:100;}
+    .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 14px;background:none;border:none;cursor:pointer;color:var(--text3);font-family:'DM Sans',sans-serif;font-size:10px;font-weight:500;letter-spacing:0.03em;transition:color 0.2s;}
+    .nav-btn.active{color:var(--text);}
+    .nav-btn svg{width:20px;height:20px;stroke-width:1.8;}
+    .page-header{padding:56px 20px 16px;background:var(--bg);}
+    .page-header h1{font-size:26px;font-weight:600;letter-spacing:-0.03em;}
+    .page-header p{font-size:13px;color:var(--text2);margin-top:3px;}
+    .scroll-content{flex:1;overflow-y:auto;padding:0 16px 120px;-webkit-overflow-scrolling:touch;}
+    .card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+    .card-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:12px;}
+    .date-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
+    .date-strip::-webkit-scrollbar{display:none;}
+    .date-chip{display:flex;flex-direction:column;align-items:center;min-width:44px;padding:8px 6px;border-radius:12px;background:var(--bg3);border:0.5px solid var(--border);gap:2px;transition:all 0.2s;}
+    .date-chip.today{border-color:var(--blue);background:var(--blue-bg);}
+    .date-chip.done{border-color:var(--green);background:var(--green-bg);}
+    .date-chip.partial{border-color:var(--amber);background:var(--amber-bg);}
+    .date-chip .day-name{font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;}
+    .date-chip .day-num{font-size:16px;font-weight:600;font-family:'DM Mono',monospace;color:var(--text);}
+    .date-chip.today .day-name,.date-chip.today .day-num{color:var(--blue);}
+    .date-chip.done .day-name,.date-chip.done .day-num{color:var(--green);}
+    .date-chip.partial .day-name,.date-chip.partial .day-num{color:var(--amber);}
+    .workout-row{display:flex;gap:8px;}
+    .big-toggle{flex:1;padding:14px 10px;border-radius:var(--radius-sm);background:var(--bg3);border:0.5px solid var(--border);color:var(--text2);font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.2s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;}
+    .big-toggle svg{width:22px;height:22px;stroke-width:1.8;}
+    .big-toggle:active{transform:scale(0.97);}
+    .big-toggle.yes{background:var(--green-bg);border-color:var(--green);color:var(--green);}
+    .big-toggle.no{background:var(--red-bg);border-color:var(--red);color:var(--red);}
+    .macro-row{margin-bottom:14px;}
+    .macro-row:last-child{margin-bottom:0;}
+    .macro-meta{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+    .macro-name{font-size:13px;color:var(--text2);}
+    .macro-val{font-size:12px;font-family:'DM Mono',monospace;color:var(--text2);}
+    .bar-track{height:5px;background:var(--bg4);border-radius:99px;overflow:hidden;}
+    .bar-fill{height:100%;border-radius:99px;transition:width 0.5s cubic-bezier(0.4,0,0.2,1);}
+    .bar-p{background:var(--blue);}.bar-k{background:var(--red);}.bar-c{background:var(--amber);}.bar-f{background:var(--green);}.bar-s{background:var(--purple);}.bar-w{background:var(--blue);}
+    .meal-block{border:0.5px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden;transition:border-color 0.2s;}
+    .meal-block.has-data{border-color:rgba(255,255,255,0.16);}
+    .meal-header{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none;background:var(--bg3);}
+    .meal-emoji{font-size:18px;line-height:1;flex-shrink:0;}
+    .meal-title{font-size:14px;font-weight:500;flex:1;}
+    .meal-chips{display:flex;gap:4px;flex-wrap:wrap;align-items:center;}
+    .meal-chip{font-size:10px;font-family:'DM Mono',monospace;background:var(--bg4);border:0.5px solid var(--border);padding:2px 6px;border-radius:99px;color:var(--text3);}
+    .meal-chip.active{background:var(--blue-bg);border-color:var(--blue);color:var(--blue);}
+    .meal-chevron{font-size:11px;color:var(--text3);transition:transform 0.25s;flex-shrink:0;}
+    .meal-block.open .meal-chevron{transform:rotate(180deg);}
+    .meal-clear{font-size:11px;color:var(--text3);background:none;border:0.5px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;}
+    .meal-clear:active{color:var(--red);border-color:var(--red);}
+    .meal-body{display:none;padding:12px 14px;background:var(--bg2);border-top:0.5px solid var(--border);}
+    .meal-block.open .meal-body{display:block;animation:slideDown 0.2s ease;}
+    .input-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .totals-divider{height:0.5px;background:var(--border);margin:14px 0;}
+    .total-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:10px;}
+    .inp-group{display:flex;flex-direction:column;gap:5px;}
+    .inp-group label{font-size:11px;color:var(--text3);font-weight:500;}
+    .inp-group input{background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;font-family:'DM Mono',monospace;padding:10px 12px;width:100%;transition:border-color 0.2s;-webkit-appearance:none;}
+    .inp-group input:focus{outline:none;border-color:var(--border2);}
+    .inp-group input::placeholder{color:var(--text3);}
+    input[type=number]{-moz-appearance:textfield;}
+    input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+    input[type=time]{color-scheme:dark;}
+    .sleep-big{font-size:44px;font-weight:600;font-family:'DM Mono',monospace;letter-spacing:-0.04em;margin:4px 0;}
+    .sleep-big span{font-size:20px;font-weight:400;color:var(--text3);margin-left:4px;}
+    .sleep-mood{font-size:12px;color:var(--text2);margin-bottom:12px;}
+    .water-display{display:flex;align-items:baseline;gap:6px;margin-bottom:4px;}
+    .water-big{font-size:44px;font-weight:600;font-family:'DM Mono',monospace;letter-spacing:-0.04em;color:var(--blue);}
+    .water-unit{font-size:16px;color:var(--text3);font-weight:400;}
+    .water-sub{font-size:12px;color:var(--text2);margin-bottom:14px;}
+    .glass-grid{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 4px;}
+    .glass-btn{width:36px;height:44px;border-radius:6px 6px 8px 8px;background:var(--bg3);border:0.5px solid var(--border);cursor:pointer;transition:all 0.25s cubic-bezier(0.4,0,0.2,1);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+    .glass-btn::after{content:'';position:absolute;bottom:0;left:0;right:0;height:0%;background:var(--blue);opacity:0.35;transition:height 0.4s cubic-bezier(0.4,0,0.2,1);border-radius:0 0 6px 6px;}
+    .glass-btn.filled{border-color:var(--blue);}
+    .glass-btn.filled::after{height:100%;opacity:0.25;}
+    .glass-btn svg{width:18px;height:18px;stroke-width:1.6;color:var(--text3);position:relative;z-index:1;transition:color 0.2s;}
+    .glass-btn.filled svg{color:var(--blue);}
+    .glass-btn:active{transform:scale(0.9);}
+    .glass-btn.just-filled{animation:glassIn 0.3s ease;}
+    .water-controls{display:flex;gap:8px;margin-top:10px;}
+    .water-btn{flex:1;padding:10px;border-radius:var(--radius-sm);background:var(--bg3);border:0.5px solid var(--border);color:var(--text2);font-size:20px;line-height:1;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.15s;}
+    .water-btn:active{transform:scale(0.94);}
+    .water-btn.add{border-color:var(--blue);color:var(--blue);background:var(--blue-bg);}
+    .supps-grid{display:flex;flex-direction:column;gap:8px;}
+    .supp-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--radius-sm);background:var(--bg3);border:0.5px solid var(--border);cursor:pointer;transition:all 0.2s;user-select:none;}
+    .supp-item:active{transform:scale(0.98);}
+    .supp-item.taken{background:rgba(74,222,128,0.06);border-color:var(--green);}
+    .supp-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+    .supp-item.taken .supp-check{background:var(--green);border-color:var(--green);animation:checkAnim 0.25s ease;}
+    .supp-check svg{width:12px;height:12px;stroke:#000;stroke-width:3;opacity:0;transition:opacity 0.15s;}
+    .supp-item.taken .supp-check svg{opacity:1;}
+    .supp-info{flex:1;}
+    .supp-name{font-size:14px;font-weight:500;color:var(--text);}
+    .supp-item.taken .supp-name{color:var(--green);}
+    .supp-dose{font-size:11px;color:var(--text3);margin-top:1px;}
+    .supps-summary{font-size:12px;color:var(--text2);margin-bottom:12px;}
+    .supps-summary span{color:var(--green);font-weight:600;font-family:'DM Mono',monospace;}
+    .add-row{display:flex;gap:8px;margin-top:12px;}
+    .add-row input{flex:1;background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;padding:9px 12px;transition:border-color 0.2s;}
+    .add-row input:focus{outline:none;border-color:var(--border2);}
+    .add-row input::placeholder{color:var(--text3);}
+    .add-btn{padding:9px 14px;border-radius:var(--radius-sm);background:var(--bg3);border:0.5px solid var(--border);color:var(--text2);font-size:20px;line-height:1;cursor:pointer;transition:all 0.15s;font-family:'DM Sans',sans-serif;}
+    .add-btn:active{transform:scale(0.94);}
+    .med-item{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius-sm);background:var(--bg3);border:0.5px solid var(--border);margin-bottom:8px;transition:all 0.2s;}
+    .med-item.taken{background:var(--teal-bg);border-color:var(--teal);}
+    .med-left{flex:1;cursor:pointer;display:flex;align-items:center;gap:12px;}
+    .med-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+    .med-item.taken .med-check{background:var(--teal);border-color:var(--teal);animation:checkAnim 0.25s ease;}
+    .med-check svg{width:12px;height:12px;stroke:#000;stroke-width:3;opacity:0;transition:opacity 0.15s;}
+    .med-item.taken .med-check svg{opacity:1;}
+    .med-info{flex:1;}
+    .med-name{font-size:14px;font-weight:500;color:var(--text);}
+    .med-item.taken .med-name{color:var(--teal);}
+    .med-time-badge{font-size:10px;background:var(--bg4);border:0.5px solid var(--border);padding:2px 7px;border-radius:99px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:3px;display:inline-block;}
+    .med-item.taken .med-time-badge{background:var(--teal-bg);color:var(--teal);border-color:var(--teal);}
+    .bell-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:4px;transition:color 0.2s;line-height:1;}
+    .bell-btn.active{color:var(--amber);animation:bellRing 0.5s ease;}
+    .med-add-grid{display:grid;grid-template-columns:1fr 100px;gap:8px;margin-top:12px;}
+    .med-add-grid input{background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:13px;font-family:'DM Mono',monospace;padding:9px 12px;transition:border-color 0.2s;width:100%;}
+    .med-add-grid input:focus{outline:none;border-color:var(--border2);}
+    .med-add-grid input::placeholder{color:var(--text3);}
+    .med-add-btn{width:100%;margin-top:8px;background:var(--teal-bg);border:0.5px solid var(--teal);border-radius:var(--radius-sm);color:var(--teal);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.15s;padding:10px 12px;}
+    .med-add-btn:active{transform:scale(0.97);}
+    .notif-banner{background:var(--amber-bg);border:0.5px solid var(--amber);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;color:var(--amber);margin-bottom:12px;line-height:1.6;display:none;}
+    .notif-info{font-size:11px;color:var(--text3);margin-top:10px;line-height:1.5;}
+    .save-btn{width:100%;padding:16px;background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.2s;margin-bottom:8px;letter-spacing:0.01em;}
+    .save-btn:active{transform:scale(0.98);opacity:0.9;}
+    .save-btn.saved{background:var(--green);color:#000;animation:popIn 0.3s ease;}
+    .reset-btn{width:100%;padding:13px;background:transparent;color:var(--text3);border:0.5px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.2s;margin-bottom:12px;}
+    .reset-btn:active{background:var(--red-bg);color:var(--red);border-color:var(--red);animation:shake 0.3s ease;}
+    .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .stat-chip{background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;}
+    .stat-chip .s-label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;}
+    .stat-chip .s-val{font-size:22px;font-weight:600;font-family:'DM Mono',monospace;}
+    .stat-chip .s-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+    .hist-item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:0.5px solid var(--border);animation:slideDown 0.2s ease;}
+    .hist-item:last-child{border-bottom:none;}
+    .hist-date{font-size:13px;color:var(--text2);}
+    .hist-badges{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;}
+    .badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:99px;letter-spacing:0.02em;}
+    .badge-green{background:var(--green-bg);color:var(--green);}
+    .badge-amber{background:var(--amber-bg);color:var(--amber);}
+    .badge-blue{background:var(--blue-bg);color:var(--blue);}
+    .badge-gray{background:var(--bg3);color:var(--text3);}
+    .data-entry{padding:12px 0;border-bottom:0.5px solid var(--border);}
+    .data-entry:last-child{border-bottom:none;}
+    .data-entry-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+    .data-entry-date{font-size:13px;font-weight:500;}
+    .data-entry-del{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:2px 8px;border-radius:6px;border:0.5px solid var(--border);font-family:'DM Sans',sans-serif;}
+    .data-entry-del:active{color:var(--red);border-color:var(--red);}
+    .data-row{display:flex;justify-content:space-between;padding:2px 0;}
+    .data-key{font-size:11px;color:var(--text3);}
+    .data-val{font-size:11px;font-family:'DM Mono',monospace;color:var(--text2);}
+    .export-btn{width:100%;padding:12px;background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.15s;margin-top:8px;}
+    .export-btn:active{background:var(--bg4);}
+    .danger-btn{width:100%;padding:14px;margin-top:8px;background:var(--red-bg);border:0.5px solid var(--red);border-radius:var(--radius-sm);color:var(--red);font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity 0.2s;}
+    .danger-btn:active{opacity:0.7;}
+    .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a1a;color:var(--text);border:0.5px solid var(--border2);padding:10px 20px;border-radius:99px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;z-index:999;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);white-space:nowrap;}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+    .empty{text-align:center;padding:40px 20px;color:var(--text3);font-size:13px;line-height:1.6;}
+  </style>
+</head>
+<body>
+
+<!-- ===== TODAY ===== -->
+<div class="page active" id="page-today">
+  <div class="page-header">
+    <h1 id="greetText">Hey 👋</h1>
+    <p id="todayDateText"></p>
+  </div>
+  <div class="scroll-content">
+
+    <div class="card">
+      <div class="card-label">This week</div>
+      <div class="date-strip" id="dateStrip"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Workout</div>
+      <div class="workout-row">
+        <button class="big-toggle" id="btnYes" onclick="setWorkout(true)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 4v6a6 6 0 0012 0V4"/><line x1="6" y1="4" x2="6" y2="2"/><line x1="18" y1="4" x2="18" y2="2"/><line x1="12" y1="11" x2="12" y2="21"/><line x1="9" y1="21" x2="15" y2="21"/></svg>
+          Trained
+        </button>
+        <button class="big-toggle" id="btnNo" onclick="setWorkout(false)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          Rest Day
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Nutrition — meals</div>
+
+      <!-- Breakfast -->
+      <div class="meal-block open" id="mb-breakfast">
+        <div class="meal-header" onclick="toggleMeal('breakfast')">
+          <span class="meal-emoji">🌅</span>
+          <span class="meal-title">Breakfast</span>
+          <div class="meal-chips" id="mc-breakfast"></div>
+          <button class="meal-clear" onclick="event.stopPropagation();clearMeal('breakfast')">Clear</button>
+          <span class="meal-chevron">▼</span>
+        </div>
+        <div class="meal-body">
+          <div class="input-grid">
+            <div class="inp-group"><label>Protein (g)</label><input type="number" id="bp" placeholder="0" oninput="updateMeals()"></div>
+            <div class="inp-group"><label>Calories (kcal)</label><input type="number" id="bk" placeholder="0" oninput="updateMeals()"></div>
+            <div class="inp-group"><label>Carbs (g)</label><input type="number" id="bc" placeholder="0" oninput="updateMeals()"></div>
+            <div class="inp-group"><label>Fats (g)</label><input type="number" id="bf" placeholder="0" oninput="updateMeals()"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lunch -->
+      <div class="meal-block" id="mb-lunch">
+        <div class="meal-header" onclick="toggleMeal('lunch')">
+          <span class="meal-emoji">☀️</span>
+          <span class="meal-title">Lunch</span>
+          <div class="meal-chips" id="mc-lunch"></div>
+          <button class="meal-clear" onclick="event.stopPropagation();clearMeal('lunch')">Clear</button>
+          <span class="meal-chevron">▼</span>
+        </div>
+        <div class="meal-body">
+          <div class="input-grid">
+            <div class="inp-group"><label>Protein (g)</label><input type="number" id="lp" placeholder="0" oninput="updateMeals()"></div>
+            <div class="inp-group"><label>Calories (kcal)</label><input type="number" id="lk" placeholder="0" oninput="updateMeals()"></div>
+            <div class="inp-group"><label>Carbs (g)</label><input type="number" id="lc" placeholder="0" oninput="updateMeals()"></div>
+            <div class="inp-group"><label>Fats (g)</label><input type="number" id="lf" placeholder="0" oninput="updateMeals()"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dinner -->
+      <div class="meal-block" id="mb-dinner">
+        <div class="meal-header" onclick="toggleMeal('dinner')">
+          <span class="meal-emoji">🌙</span>
+          <span class="meal-title">Dinner</span>
+          <div class="meal-chips" id="mc-dinner"></div>
+          <button class="meal-clear" onclick="event.stopPropagation();clearMeal('dinner')">Clear</button>
+          <span class="meal-chevron">▼</span>
+        </div>
+        <div class="meal-body">
+          <div class="input-grid">
+            <div class="inp-group"><label>Protein (g)</label><input type="number" id="dp" placeholder="0" oninput="updateMeals()"></div>
+            <div class="inp-group"><label>Calories (kcal)</label><input type="number" id="dk" placeholder="0" oninput="updateMeals()"></div>
+            <div class="inp-group"><label>Carbs (g)</label><input type="number" id="dc" placeholder="0" oninput="updateMeals()"></div>
+            <div class="inp-group"><label>Fats (g)</label><input type="number" id="df" placeholder="0" oninput="updateMeals()"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Snacks (optional, collapsed) -->
+      <div class="meal-block" id="mb-snacks">
+        <div class="meal-header" onclick="toggleMeal('snacks')">
+          <span class="meal-emoji">🍎</span>
+          <span class="meal-title">Snacks <span style="font-size:11px;color:var(--text3);font-weight:400">optional</span></span>
+          <div class="meal-chips" id="mc-snacks"></div>
+          <button class="meal-clear" onclick="event.stopPropagation();clearMeal('snacks')">Clear</button>
+          <span class="meal-chevron">▼</span>
+        </div>
+        <div class="meal-body">
+          <div class="input-grid">
+            <div class="inp-group"><label>Protein (g)</label><input type="number" id="sp" placeholder="0" oninput="updateMeals()"></div>
+            <div class="inp-group"><label>Calories (kcal)</label><input type="number" id="sk" placeholder="0" oninput="updateMeals()"></div>
+            <div class="inp-group"><label>Carbs (g)</label><input type="number" id="sc" placeholder="0" oninput="updateMeals()"></div>
+            <div class="inp-group"><label>Fats (g)</label><input type="number" id="sf" placeholder="0" oninput="updateMeals()"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Daily totals -->
+      <div class="totals-divider"></div>
+      <div class="total-label">Daily totals</div>
+      <div class="macro-row"><div class="macro-meta"><span class="macro-name">Protein</span><span class="macro-val" id="vP">0 / 100g</span></div><div class="bar-track"><div class="bar-fill bar-p" id="bP" style="width:0%"></div></div></div>
+      <div class="macro-row"><div class="macro-meta"><span class="macro-name">Calories</span><span class="macro-val" id="vK">0 / 1900 kcal</span></div><div class="bar-track"><div class="bar-fill bar-k" id="bK" style="width:0%"></div></div></div>
+      <div class="macro-row"><div class="macro-meta"><span class="macro-name">Carbs</span><span class="macro-val" id="vC">0 / 200g</span></div><div class="bar-track"><div class="bar-fill bar-c" id="bC" style="width:0%"></div></div></div>
+      <div class="macro-row"><div class="macro-meta"><span class="macro-name">Fats</span><span class="macro-val" id="vF">0 / 50g</span></div><div class="bar-track"><div class="bar-fill bar-f" id="bF" style="width:0%"></div></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Sleep — last night</div>
+      <div class="sleep-big" id="sleepBig">—<span>hrs</span></div>
+      <div class="sleep-mood" id="sleepMood">Log how long you slept</div>
+      <div class="macro-row"><div class="macro-meta"><span class="macro-name">vs 8hr goal</span><span class="macro-val" id="vS">0 / 8 hrs</span></div><div class="bar-track"><div class="bar-fill bar-s" id="bS" style="width:0%"></div></div></div>
+      <div class="inp-group" style="margin-top:12px"><label>Hours slept</label><input type="number" id="iS" placeholder="e.g. 7.5" step="0.5" min="0" max="24" oninput="updateSleep()"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Water — daily goal</div>
+      <div class="water-display"><div class="water-big" id="waterBig">0</div><div class="water-unit">/ 8 glasses</div></div>
+      <div class="water-sub" id="waterSub">Stay hydrated 💧</div>
+      <div class="macro-row" style="margin-bottom:0"><div class="macro-meta"><span class="macro-name">Progress</span><span class="macro-val" id="vW">0 / 2000 ml</span></div><div class="bar-track"><div class="bar-fill bar-w" id="bW" style="width:0%"></div></div></div>
+      <div class="glass-grid" id="glassGrid"></div>
+      <div class="water-controls">
+        <button class="water-btn" onclick="addWater(-1)">−</button>
+        <button class="water-btn add" onclick="addWater(1)">+ Glass</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Supplements</div>
+      <div class="supps-summary">Taken <span id="suppsDone">0</span> of <span id="suppsTotal">0</span> today</div>
+      <div class="supps-grid" id="suppsGrid"></div>
+      <div class="add-row">
+        <input type="text" id="newSuppInput" placeholder="Add supplement..." maxlength="30" onkeydown="if(event.key==='Enter')addSupp()">
+        <button class="add-btn" onclick="addSupp()">+</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span class="card-label" style="margin-bottom:0">Medicine reminders</span>
+        <span id="notifStatus" style="font-size:10px;color:var(--text3)"></span>
+      </div>
+      <div class="notif-banner" id="notifBanner">
+        Allow notifications so reminders pop up on your phone even when the screen is off.
+        <button onclick="requestNotifPerm()" style="background:var(--amber);color:#000;border:none;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;margin-left:6px;cursor:pointer;font-family:'DM Sans',sans-serif;">Allow</button>
+      </div>
+      <div id="medList"></div>
+      <div class="med-add-grid">
+        <input type="text" id="newMedName" placeholder="Medicine name..." maxlength="30" onkeydown="if(event.key==='Enter')addMed()">
+        <input type="time" id="newMedTime">
+      </div>
+      <button class="med-add-btn" onclick="addMed()">+ Add medicine</button>
+      <div class="notif-info">Tap 🔔 on any medicine to enable a push reminder at that time. Reminders fire daily while the app has been opened at least once.</div>
+    </div>
+
+    <button class="save-btn" id="saveBtn" onclick="saveDay()">Save today</button>
+    <button class="reset-btn" onclick="resetToday()">Reset today's log</button>
+  </div>
+</div>
+
+<!-- ===== HISTORY ===== -->
+<div class="page" id="page-history">
+  <div class="page-header"><h1>History</h1><p>Your past logs</p></div>
+  <div class="scroll-content">
+    <div class="card"><div id="histList"><div class="empty">No logs yet. Start tracking today!</div></div></div>
+  </div>
+</div>
+
+<!-- ===== STATS ===== -->
+<div class="page" id="page-stats">
+  <div class="page-header"><h1>Stats</h1><p>Your weekly averages</p></div>
+  <div class="scroll-content">
+    <div class="summary-grid" style="margin-bottom:12px">
+      <div class="stat-chip"><div class="s-label">Workout days</div><div class="s-val" id="statWorkout" style="color:var(--green)">—</div><div class="s-sub">last 7 days</div></div>
+      <div class="stat-chip"><div class="s-label">Avg sleep</div><div class="s-val" id="statSleep" style="color:var(--purple)">—</div><div class="s-sub">hours / night</div></div>
+      <div class="stat-chip"><div class="s-label">Avg protein</div><div class="s-val" id="statProtein" style="color:var(--blue)">—</div><div class="s-sub">grams / day</div></div>
+      <div class="stat-chip"><div class="s-label">Diet score</div><div class="s-val" id="statDiet" style="color:var(--amber)">—</div><div class="s-sub">avg this week</div></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Weekly nutrition avg</div>
+      <div class="macro-row"><div class="macro-meta"><span class="macro-name">Protein</span><span class="macro-val" id="avgP">—</span></div><div class="bar-track"><div class="bar-fill bar-p" id="avgBP" style="width:0%"></div></div></div>
+      <div class="macro-row"><div class="macro-meta"><span class="macro-name">Calories</span><span class="macro-val" id="avgK">—</span></div><div class="bar-track"><div class="bar-fill bar-k" id="avgBK" style="width:0%"></div></div></div>
+      <div class="macro-row"><div class="macro-meta"><span class="macro-name">Carbs</span><span class="macro-val" id="avgC">—</span></div><div class="bar-track"><div class="bar-fill bar-c" id="avgBC" style="width:0%"></div></div></div>
+      <div class="macro-row"><div class="macro-meta"><span class="macro-name">Fats</span><span class="macro-val" id="avgF">—</span></div><div class="bar-track"><div class="bar-fill bar-f" id="avgBF" style="width:0%"></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DATA ===== -->
+<div class="page" id="page-data">
+  <div class="page-header"><h1>Your Data</h1><p>All saved logs — view, delete, export</p></div>
+  <div class="scroll-content">
+    <div class="card">
+      <div id="dataList"><div class="empty">No data saved yet.</div></div>
+      <button class="export-btn" onclick="exportData()">⬇ Export as JSON file</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SETTINGS ===== -->
+<div class="page" id="page-settings">
+  <div class="page-header"><h1>Settings</h1><p>Preferences</p></div>
+  <div class="scroll-content">
+    <div class="card">
+      <div class="card-label">About</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.7">Data stored locally using <code style="font-family:'DM Mono';font-size:12px;background:var(--bg3);padding:1px 5px;border-radius:4px">localStorage</code>. Works offline after first load.</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Daily targets</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.9">🔵 Protein — 100g<br>🔴 Calories — 1900 kcal<br>🟡 Carbs — 200g<br>🟢 Fats — 50g<br>🟣 Sleep — 8 hrs<br>💧 Water — 8 glasses (2L)</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Danger zone</div>
+      <button class="danger-btn" onclick="confirmClear()">Clear ALL data</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nav -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="goPage('today',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Today
+  </button>
+  <button class="nav-btn" onclick="goPage('history',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    History
+  </button>
+  <button class="nav-btn" onclick="goPage('stats',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Stats
+  </button>
+  <button class="nav-btn" onclick="goPage('data',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+    Data
+  </button>
+  <button class="nav-btn" onclick="goPage('settings',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    Settings
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const T={protein:100,kcal:1900,carbs:200,fats:50,sleep:8,water:8};
+const DEF_SUPPS=[{name:'Creatine',dose:'5g',taken:false},{name:'Multivitamin',dose:'1 tablet',taken:false},{name:'Omega-3',dose:'1g',taken:false},{name:'Vitamin D',dose:'2000 IU',taken:false}];
+const MEALS=['breakfast','lunch','dinner','snacks'];
+const MEAL_IDS={breakfast:{p:'bp',k:'bk',c:'bc',f:'bf'},lunch:{p:'lp',k:'lk',c:'lc',f:'lf'},dinner:{p:'dp',k:'dk',c:'dc',f:'df'},snacks:{p:'sp',k:'sk',c:'sc',f:'sf'}};
+function emptyMeal(){return{p:0,k:0,c:0,f:0};}
+let state={workout:null,meals:{breakfast:emptyMeal(),lunch:emptyMeal(),dinner:emptyMeal(),snacks:emptyMeal()},protein:0,kcal:0,carbs:0,fats:0,sleep:null,water:0,supps:[]};
+let medTimers=[];
+
+function todayKey(){const d=new Date();return`hth:${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function keyForDate(d){return`hth:${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function fmtDate(d){const D=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return`${D[d.getDay()]} ${d.getDate()} ${M[d.getMonth()]}`;}
+function greeting(){const h=new Date().getHours();return h<12?'Morning 🌅':h<17?'Hey 👋':'Evening 🌙';}
+document.getElementById('greetText').textContent=greeting();
+document.getElementById('todayDateText').textContent=fmtDate(new Date());
+
+function goPage(n,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
+  btn.classList.add('active');
+  if(n==='history')renderHistory();
+  if(n==='stats')renderStats();
+  if(n==='data')renderDataPage();
+}
+
+function setWorkout(v){state.workout=v;document.getElementById('btnYes').className='big-toggle'+(v?' yes':'');document.getElementById('btnNo').className='big-toggle'+(!v?' no':'');}
+function setBar(id,v,max){document.getElementById(id).style.width=Math.min(100,Math.round(v/max*100))+'%';}
+
+function toggleMeal(name){
+  const el=document.getElementById('mb-'+name);
+  el.classList.toggle('open');
+}
+
+function clearMeal(name){
+  const ids=MEAL_IDS[name];
+  ['p','k','c','f'].forEach(k=>{ document.getElementById(ids[k]).value=''; });
+  state.meals[name]=emptyMeal();
+  updateMeals();
+  showToast('Meal cleared');
+}
+
+function updateMeals(){
+  MEALS.forEach(m=>{
+    const ids=MEAL_IDS[m];
+    state.meals[m]={
+      p:parseFloat(document.getElementById(ids.p).value)||0,
+      k:parseFloat(document.getElementById(ids.k).value)||0,
+      c:parseFloat(document.getElementById(ids.c).value)||0,
+      f:parseFloat(document.getElementById(ids.f).value)||0,
+    };
+  });
+  const tot={p:0,k:0,c:0,f:0};
+  MEALS.forEach(m=>{tot.p+=state.meals[m].p;tot.k+=state.meals[m].k;tot.c+=state.meals[m].c;tot.f+=state.meals[m].f;});
+  state.protein=tot.p; state.kcal=tot.k; state.carbs=tot.c; state.fats=tot.f;
+  setBar('bP',tot.p,T.protein); document.getElementById('vP').textContent=`${tot.p} / 100g`;
+  setBar('bK',tot.k,T.kcal);   document.getElementById('vK').textContent=`${tot.k} / 1900 kcal`;
+  setBar('bC',tot.c,T.carbs);  document.getElementById('vC').textContent=`${tot.c} / 200g`;
+  setBar('bF',tot.f,T.fats);   document.getElementById('vF').textContent=`${tot.f} / 50g`;
+  // update meal chips
+  MEALS.forEach(m=>{
+    const d=state.meals[m],hasData=d.p||d.k||d.c||d.f;
+    document.getElementById('mb-'+m).classList.toggle('has-data',!!hasData);
+    document.getElementById('mc-'+m).innerHTML=hasData?`
+      ${d.p?`<span class="meal-chip active">${d.p}g P</span>`:''}
+      ${d.k?`<span class="meal-chip active">${d.k} kcal</span>`:''}
+    `:'<span class="meal-chip" style="opacity:0.5">empty</span>';
+  });
+}
+
+function updateSleep(){
+  const v=parseFloat(document.getElementById('iS').value);
+  state.sleep=isNaN(v)?null:v;
+  if(state.sleep!==null){
+    document.getElementById('sleepBig').innerHTML=`${state.sleep}<span>hrs</span>`;
+    document.getElementById('sleepMood').textContent=state.sleep>=8?'Perfect! Great recovery 🟢':state.sleep>=6?'Decent, aim for 8+ 🟡':'Low sleep — try to rest more 🔴';
+    setBar('bS',state.sleep,T.sleep);document.getElementById('vS').textContent=`${state.sleep} / 8 hrs`;
+  } else {
+    document.getElementById('sleepBig').innerHTML='—<span>hrs</span>';
+    document.getElementById('sleepMood').textContent='Log how long you slept';
+    setBar('bS',0,8);document.getElementById('vS').textContent='0 / 8 hrs';
+  }
+}
+
+function addWater(d){state.water=Math.max(0,Math.min(12,(state.water||0)+d));renderWater(d>0);}
+function setWater(n){state.water=state.water===n?n-1:n;renderWater(true);}
+function renderWater(anim){
+  const w=state.water||0;
+  document.getElementById('waterBig').textContent=w;
+  document.getElementById('vW').textContent=`${w*250} / 2000 ml`;
+  setBar('bW',w,T.water);
+  const msgs=['Stay hydrated 💧','Good start! Keep going 💧','Halfway there! 💧','Almost there! 💧','Hydration goal smashed! 🏆'];
+  document.getElementById('waterSub').textContent=msgs[w===0?0:w<=2?1:w<=4?2:w<=6?3:4];
+  const g=document.getElementById('glassGrid');g.innerHTML='';
+  for(let i=0;i<8;i++){
+    const f=i<w,isN=f&&anim&&i===w-1;
+    g.innerHTML+=`<button class="glass-btn${f?' filled':''}${isN?' just-filled':''}" onclick="setWater(${i+1})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 3h14l-2 13a2 2 0 01-2 2H9a2 2 0 01-2-2L5 3z"/><line x1="3" y1="3" x2="21" y2="3"/></svg></button>`;
+  }
+}
+
+function getSupps(){const s=localStorage.getItem('hth:suppList');return s?JSON.parse(s):JSON.parse(JSON.stringify(DEF_SUPPS));}
+function saveSupps(l){localStorage.setItem('hth:suppList',JSON.stringify(l));}
+function renderSupps(){
+  const s=state.supps;
+  document.getElementById('suppsDone').textContent=s.filter(x=>x.taken).length;
+  document.getElementById('suppsTotal').textContent=s.length;
+  document.getElementById('suppsGrid').innerHTML=s.map((x,i)=>`<div class="supp-item${x.taken?' taken':''}" onclick="toggleSupp(${i})"><div class="supp-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></div><div class="supp-info"><div class="supp-name">${x.name}</div><div class="supp-dose">${x.dose}</div></div><button onclick="event.stopPropagation();removeSupp(${i})" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:4px;line-height:1">×</button></div>`).join('');
+}
+function toggleSupp(i){state.supps[i].taken=!state.supps[i].taken;saveSupps(state.supps);renderSupps();}
+function removeSupp(i){state.supps.splice(i,1);saveSupps(state.supps);renderSupps();}
+function addSupp(){
+  const inp=document.getElementById('newSuppInput'),n=inp.value.trim();if(!n)return;
+  state.supps.push({name:n,dose:'—',taken:false});saveSupps(state.supps);inp.value='';renderSupps();showToast(`${n} added!`);
+}
+
+function getMeds(){const s=localStorage.getItem('hth:meds');return s?JSON.parse(s):[];}
+function saveMeds(l){localStorage.setItem('hth:meds',JSON.stringify(l));}
+function renderMeds(){
+  const meds=getMeds(),takenToday=JSON.parse(localStorage.getItem('hth:medTaken:'+todayKey())||'{}');
+  document.getElementById('medList').innerHTML=meds.length?meds.map((m,i)=>{
+    const t=!!takenToday[i];
+    return`<div class="med-item${t?' taken':''}"><div class="med-left" onclick="toggleMed(${i})"><div class="med-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></div><div class="med-info"><div class="med-name">${m.name}</div><div class="med-time-badge">${m.time||'No time set'}</div></div></div><button class="bell-btn${m.remind?' active':''}" onclick="toggleMedRemind(${i})" title="Toggle reminder">🔔</button><button onclick="removeMed(${i})" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:4px;line-height:1">×</button></div>`;
+  }).join(''):'<div class="empty" style="padding:20px 0">No medicines added yet.</div>';
+  checkNotifStatus();
+}
+function toggleMed(i){
+  const tk=todayKey(),t=JSON.parse(localStorage.getItem('hth:medTaken:'+tk)||'{}');
+  t[i]=!t[i];localStorage.setItem('hth:medTaken:'+tk,JSON.stringify(t));
+  renderMeds();if(t[i])showToast('Medicine taken ✓');
+}
+function addMed(){
+  const n=document.getElementById('newMedName').value.trim(),t=document.getElementById('newMedTime').value;
+  if(!n)return;
+  const meds=getMeds();meds.push({name:n,time:t,remind:false});saveMeds(meds);
+  document.getElementById('newMedName').value='';document.getElementById('newMedTime').value='';
+  renderMeds();scheduleAllReminders();showToast(`${n} added!`);
+}
+function removeMed(i){const m=getMeds();m.splice(i,1);saveMeds(m);renderMeds();scheduleAllReminders();}
+function toggleMedRemind(i){
+  const m=getMeds();m[i].remind=!m[i].remind;saveMeds(m);
+  if(m[i].remind){requestNotifPerm().then(()=>{scheduleAllReminders();showToast('Reminder set! 🔔');});}
+  else{scheduleAllReminders();showToast('Reminder off');}
+  renderMeds();
+}
+
+async function requestNotifPerm(){
+  if(!('Notification' in window))return;
+  if(Notification.permission==='default')await Notification.requestPermission();
+  checkNotifStatus();
+}
+function checkNotifStatus(){
+  const banner=document.getElementById('notifBanner'),status=document.getElementById('notifStatus');
+  if(!('Notification' in window)){status.textContent='Not supported';banner.style.display='none';return;}
+  if(Notification.permission==='granted'){status.textContent='✓ Enabled';status.style.color='var(--green)';banner.style.display='none';}
+  else if(Notification.permission==='denied'){status.textContent='Blocked in browser';status.style.color='var(--red)';banner.style.display='none';}
+  else{status.textContent='';banner.style.display='block';}
+}
+function scheduleAllReminders(){
+  medTimers.forEach(t=>clearTimeout(t));medTimers=[];
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const meds=getMeds(),now=new Date();
+  meds.forEach((m,i)=>{
+    if(!m.remind||!m.time)return;
+    const[hh,mm]=m.time.split(':').map(Number),fire=new Date();
+    fire.setHours(hh,mm,0,0);if(fire<=now)return;
+    medTimers.push(setTimeout(()=>{
+      const t=JSON.parse(localStorage.getItem('hth:medTaken:'+todayKey())||'{}');
+      if(!t[i])new Notification('💊 Medicine reminder',{body:`Time to take: ${m.name}`});
+    },fire-now));
+  });
+}
+
+function saveDay(){
+  localStorage.setItem(todayKey(),JSON.stringify({...state,meals:{...state.meals},supps:state.supps.map(s=>({...s})),ts:Date.now()}));
+  saveSupps(state.supps);
+  const btn=document.getElementById('saveBtn');
+  btn.textContent='✓ Saved!';btn.classList.add('saved');
+  setTimeout(()=>{btn.textContent='Save today';btn.classList.remove('saved');},2000);
+  showToast('Day logged!');renderStrip();
+}
+
+function resetToday(){
+  if(!confirm("Reset today's log? All of today's entries will be cleared."))return;
+  localStorage.removeItem(todayKey());
+  state={workout:null,meals:{breakfast:emptyMeal(),lunch:emptyMeal(),dinner:emptyMeal(),snacks:emptyMeal()},protein:0,kcal:0,carbs:0,fats:0,sleep:null,water:0,supps:JSON.parse(JSON.stringify(DEF_SUPPS))};
+  document.getElementById('btnYes').className='big-toggle';
+  document.getElementById('btnNo').className='big-toggle';
+  MEALS.forEach(m=>{const ids=MEAL_IDS[m];['p','k','c','f'].forEach(k=>document.getElementById(ids[k]).value='');});
+  document.getElementById('iS').value='';
+  updateMeals();updateSleep();renderWater(false);renderSupps();renderMeds();renderStrip();
+  showToast('Today reset 🔄');
+}
+
+function loadToday(){
+  const supps=getSupps(),raw=localStorage.getItem(todayKey());
+  if(!raw){state.supps=supps;renderWater(false);renderSupps();renderMeds();updateMeals();return;}
+  const d=JSON.parse(raw);state={...d};
+  if(!state.supps||!state.supps.length)state.supps=supps;
+  if(!state.meals)state.meals={breakfast:emptyMeal(),lunch:emptyMeal(),dinner:emptyMeal(),snacks:emptyMeal()};
+  if(state.workout!==null)setWorkout(state.workout);
+  // restore meal inputs
+  MEALS.forEach(m=>{
+    const ids=MEAL_IDS[m],ml=state.meals[m]||emptyMeal();
+    document.getElementById(ids.p).value=ml.p||'';
+    document.getElementById(ids.k).value=ml.k||'';
+    document.getElementById(ids.c).value=ml.c||'';
+    document.getElementById(ids.f).value=ml.f||'';
+  });
+  updateMeals();
+  if(state.sleep!==null){document.getElementById('iS').value=state.sleep;updateSleep();}
+  renderWater(false);renderSupps();renderMeds();
+}
+
+function getAllKeys(){return Object.keys(localStorage).filter(k=>k.startsWith('hth:')&&!k.includes(':suppList')&&!k.includes(':meds')&&!k.includes(':medTaken')).sort().reverse();}
+
+function renderHistory(){
+  const keys=getAllKeys().slice(0,30),today=todayKey();
+  if(!keys.length){document.getElementById('histList').innerHTML='<div class="empty">No logs yet. Start tracking today!</div>';return;}
+  document.getElementById('histList').innerHTML=keys.map(k=>{
+    const d=JSON.parse(localStorage.getItem(k)||'{}'),dateObj=new Date(k.replace('hth:','')+'T12:00:00');
+    const label=k===today?'Today':fmtDate(dateObj);
+    const wB=d.workout===true?'<span class="badge badge-green">Workout</span>':d.workout===false?'<span class="badge badge-gray">Rest</span>':'';
+    const sB=d.sleep!=null?`<span class="badge badge-blue">${d.sleep}h</span>`:'';
+    const dp=Math.round(((Math.min(d.protein||0,T.protein)/T.protein)+(Math.min(d.kcal||0,T.kcal)/T.kcal)+(Math.min(d.carbs||0,T.carbs)/T.carbs)+(Math.min(d.fats||0,T.fats)/T.fats))/4*100);
+    const dB=dp>0?`<span class="badge badge-amber">${dp}%</span>`:'';
+    const wtrB=(d.water||0)>=T.water?'<span class="badge badge-blue">💧✓</span>':(d.water||0)>0?`<span class="badge badge-gray">💧${d.water}</span>`:'';
+    const sd=d.supps?d.supps.filter(s=>s.taken).length:0,st=d.supps?d.supps.length:0;
+    const sB2=st>0?`<span class="badge badge-gray">💊${sd}/${st}</span>`:'';
+    return`<div class="hist-item"><span class="hist-date">${label}</span><div class="hist-badges">${wB}${sB}${dB}${wtrB}${sB2}</div></div>`;
+  }).join('');
+}
+
+function renderStats(){
+  const keys=getAllKeys().slice(0,7);if(!keys.length)return;
+  const logs=keys.map(k=>JSON.parse(localStorage.getItem(k)||'{}'));
+  const wDays=logs.filter(d=>d.workout===true).length;
+  const sl=logs.filter(d=>d.sleep!=null),avgSl=sl.length?(sl.reduce((a,d)=>a+d.sleep,0)/sl.length).toFixed(1):'—';
+  const pl=logs.filter(d=>d.protein>0);
+  const aP=pl.length?Math.round(pl.reduce((a,d)=>a+d.protein,0)/pl.length):0;
+  const aK=pl.length?Math.round(pl.reduce((a,d)=>a+d.kcal,0)/pl.length):0;
+  const aC=pl.length?Math.round(pl.reduce((a,d)=>a+d.carbs,0)/pl.length):0;
+  const aF=pl.length?Math.round(pl.reduce((a,d)=>a+d.fats,0)/pl.length):0;
+  const aD=Math.round(logs.map(d=>((Math.min(d.protein||0,T.protein)/T.protein)+(Math.min(d.kcal||0,T.kcal)/T.kcal)+(Math.min(d.carbs||0,T.carbs)/T.carbs)+(Math.min(d.fats||0,T.fats)/T.fats))/4).reduce((a,s)=>a+s,0)/logs.length*100);
+  document.getElementById('statWorkout').textContent=wDays+'/7';
+  document.getElementById('statSleep').textContent=avgSl==='—'?'—':avgSl+'h';
+  document.getElementById('statProtein').textContent=aP?aP+'g':'—';
+  document.getElementById('statDiet').textContent=aD+'%';
+  document.getElementById('avgP').textContent=aP?`${aP} / 100g`:'no data';
+  document.getElementById('avgK').textContent=aK?`${aK} / 1900 kcal`:'no data';
+  document.getElementById('avgC').textContent=aC?`${aC} / 200g`:'no data';
+  document.getElementById('avgF').textContent=aF?`${aF} / 50g`:'no data';
+  if(aP){setBar('avgBP',aP,T.protein);setBar('avgBK',aK,T.kcal);setBar('avgBC',aC,T.carbs);setBar('avgBF',aF,T.fats);}
+}
+
+function renderDataPage(){
+  const keys=getAllKeys();
+  if(!keys.length){document.getElementById('dataList').innerHTML='<div class="empty">No data saved yet.</div>';return;}
+  document.getElementById('dataList').innerHTML=keys.map(k=>{
+    const d=JSON.parse(localStorage.getItem(k)||'{}'),date=k.replace('hth:','');
+    const dp=Math.round(((Math.min(d.protein||0,T.protein)/T.protein)+(Math.min(d.kcal||0,T.kcal)/T.kcal))/2*100);
+    const sd=d.supps?d.supps.filter(s=>s.taken).length:0,st=d.supps?d.supps.length:0;
+    const mls=d.meals||{};
+    const mealRows=MEALS.map(m=>{
+      const ml=mls[m];if(!ml||(!ml.p&&!ml.k&&!ml.c&&!ml.f))return'';
+      const emoji={breakfast:'🌅',lunch:'☀️',dinner:'🌙',snacks:'🍎'}[m];
+      return`<div class="data-row" style="margin-top:3px"><span class="data-key">${emoji} ${m.charAt(0).toUpperCase()+m.slice(1)}</span><span class="data-val">${ml.p||0}P · ${ml.k||0}kcal · ${ml.c||0}C · ${ml.f||0}F</span></div>`;
+    }).join('');
+    return`<div class="data-entry"><div class="data-entry-header"><span class="data-entry-date">${date}</span><button class="data-entry-del" onclick="deleteEntry('${k}')">Delete</button></div><div class="data-row"><span class="data-key">Workout</span><span class="data-val">${d.workout===true?'Yes':d.workout===false?'Rest':'—'}</span></div>${mealRows}<div class="data-row" style="margin-top:4px;padding-top:4px;border-top:0.5px solid var(--border)"><span class="data-key">Total protein</span><span class="data-val">${d.protein||0}g</span></div><div class="data-row"><span class="data-key">Total calories</span><span class="data-val">${d.kcal||0} kcal</span></div><div class="data-row"><span class="data-key">Sleep</span><span class="data-val">${d.sleep!=null?d.sleep+'h':'—'}</span></div><div class="data-row"><span class="data-key">Water</span><span class="data-val">${d.water||0} glasses</span></div><div class="data-row"><span class="data-key">Diet score</span><span class="data-val">${dp}%</span></div><div class="data-row"><span class="data-key">Supplements</span><span class="data-val">${sd}/${st} taken</span></div></div>`;
+  }).join('');
+}
+
+function deleteEntry(k){
+  if(!confirm('Delete this day?'))return;
+  localStorage.removeItem(k);renderDataPage();renderStrip();showToast('Entry deleted');
+}
+
+function exportData(){
+  const keys=getAllKeys();
+  const data=Object.fromEntries(keys.map(k=>[k.replace('hth:',''),JSON.parse(localStorage.getItem(k)||'{}')]));
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='health-data.json';a.click();
+  showToast('Exported! ✓');
+}
+
+function renderStrip(){
+  const strip=document.getElementById('dateStrip');strip.innerHTML='';
+  const today=new Date(),dn=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  for(let i=6;i>=0;i--){
+    const d=new Date(today);d.setDate(today.getDate()-i);
+    const k=keyForDate(d),isToday=k===todayKey(),raw=localStorage.getItem(k);
+    let cls='date-chip';
+    if(raw){const dd=JSON.parse(raw),ds=((Math.min(dd.protein||0,T.protein)/T.protein)+(Math.min(dd.kcal||0,T.kcal)/T.kcal))/2;if(dd.workout&&ds>0.6)cls='date-chip done';else if(dd.workout||ds>0.3)cls='date-chip partial';}
+    if(isToday&&cls==='date-chip')cls='date-chip today';
+    strip.innerHTML+=`<div class="${cls}"><span class="day-name">${dn[d.getDay()]}</span><span class="day-num">${d.getDate()}</span></div>`;
+  }
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+
+function confirmClear(){
+  if(!confirm('Delete ALL health data? Cannot be undone.'))return;
+  Object.keys(localStorage).filter(k=>k.startsWith('hth:')).forEach(k=>localStorage.removeItem(k));
+  showToast('All data cleared');renderStrip();renderHistory();renderDataPage();
+}
+
+loadToday();renderStrip();scheduleAllReminders();checkNotifStatus();
+</script>
+</body>
+</html>
